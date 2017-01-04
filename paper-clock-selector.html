@@ -79,28 +79,35 @@
         cursor: pointer;
         fill-opacity: 0;
       }
+      #clockHand,
       #clock.animating #clockHand, 
       #clock.animating #clipCircle {
         transition: transform 150ms ease-in;
       }
     </style>
-    <svg version="1.1" id="clock">
-      <defs>
-        <clipPath id="handClip">
-          <circle id="clipCircle" r$="{{_selectorSize}}" cx$="{{_handX}}" cy$="{{_handY}}"></circle>
-        </clipPath>
-      </defs>
-      <circle id="face" class="bg" r$="{{_radius}}" cx$="{{_radius}}" cy$="{{_radius}}"></circle>
-      <g id="clockHand" class="clock-hand">
-        <circle class="dot" r="2" cx$="{{_radius}}" cy$="{{_radius}}"></circle>
-        <line class="line" x1$="{{_radius}}" y1$="{{_radius}}" x2$="{{_handX}}" y2$="{{_handY}}"></line>
-        <circle class="disc-large" r$="{{_selectorSize}}" cx$="{{_handX}}" cy$="{{_handY}}"></circle>
-        <circle class="disc-small" r$="{{_selectorDotSize}}" cx$="{{_handX}}" cy$="{{_handY}}"></circle>
-      </g>
-      <g id="numbers"></g>
-      <path class="select-area" on-tap="_onTouch" on-track="_onTouch"
-        d$="{{_getSelectArea(_radius, _selectorInner, _selectorOuter)}}"></path>
-    </svg>
+    <div>
+      <svg version="1.1" id="clock" style="position: absolute; top: 0; left: 0;">
+        <defs>
+          <clipPath id="handClip">
+            <circle id="clipCircle" r$="{{_selectorSize}}" cx$="{{_handX}}" cy$="{{_handY}}"></circle>
+          </clipPath>
+        </defs>
+        <circle id="face" class="bg" r$="{{_radius}}" cx$="{{_radius}}" cy$="{{_radius}}"></circle>
+        <g id="numbers"></g>
+        <path class="select-area" on-tap="_onTouch" on-track="_onTouch"
+          d$="{{_getSelectArea(_radius, _selectorInner, _selectorOuter)}}"></path>
+      </svg>
+      <svg version="1.1" id="clockHand" style="position: absolute; top: 0; left: 0;">
+        <g class="clock-hand">
+          <circle class="dot" r="2" cx$="{{_radius}}" cy$="{{_radius}}"></circle>
+          <line id="handLine" class="line" x1$="{{_radius}}" y1$="{{_radius}}" x2$="{{_handX}}" y2$="{{_handY}}"></line>
+          <circle class="disc-large" r$="{{_selectorSize}}" cx$="{{_handX}}" cy$="{{_handY}}"></circle>
+        </g>
+      </svg>
+      <svg version="1.1" id="handNumber" height$="[[height]]" width$="[[width]]" style="position: absolute; top: 0; left: 0; z-index: 3;">
+          <text id="actualNumber" x="132" y="135" text-anchor="middle" fill="#ffffff">[[selected]]</text>
+      </svg>
+    </div>
   </template>
   <script>
     (function(){
@@ -179,7 +186,12 @@
           animate = typeof(animate) === 'undefined' ? this.animated : animate;
           animate = this._radius ? animate : false;
 
-          this.$.clock.classList.remove('animating');
+          if (!("classList" in this.$.clock)) {
+            var descr = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'classList');
+            Object.defineProperty(SVGElement.prototype, 'classList', descr);
+          }
+
+          Polymer.dom(this.$.clock).classList.remove('animating');
 
           var current, transform = this._getTransform(this.$.clockHand);
           if (transform) {
@@ -196,16 +208,17 @@
           if (!animate) {
             return this._setHandRotation(rotate);
           }
-
           this._once(this._transitionEvent, function() {
             if (callback) {
               callback();
             }
-            this.$.clock.classList.remove('animating');
+            // this.$.clock.classList.remove('animating');
+            Polymer.dom(this.$.clock).classList.remove('animating');
             this.fire('paper-clock-transition-end');
           }.bind(this), this.$.clockHand);
 
-          this.$.clock.classList.add('animating');
+          // this.$.clock.classList.add('animating');
+          Polymer.dom(this.$.clock).classList.add('animating');
           this.async(function() {
             this._setHandRotation(rotate);
           });
@@ -221,13 +234,20 @@
           el.style.msTransformOrigin = el.style.webkitTransformOrigin = el.style.transformOrigin = value;
         },
         _setHandRotation: function(deg) {
+          if (!("classList" in this.$.clockHand)) {
+            var descr = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'classList');
+            Object.defineProperty(SVGElement.prototype, 'classList', descr);
+          }
           var hasLabel = ((deg / 360) * this.count) % this.step === 0 ;
           var transform = 'rotate(' + deg + 'deg)';
-          this.$.clockHand.classList[['remove', 'add'][+hasLabel]]('no-dot');
+          // this.$.clockHand.classList[['remove', 'add'][+hasLabel]]('no-dot');
+          Polymer.dom(this.$.clockHand).classList[['remove', 'add'][+hasLabel]]('no-dot');
           this._setTransform(this.$.clockHand, transform);
           this._setTransform(this.$.clipCircle, transform);
+          this.$.actualNumber.setAttribute("transform", "translate(" + Math.cos((deg-90)*Math.PI/180)*108 + "," + Math.sin((deg-90)*Math.PI/180)*108+")");
         },
         _selectedChanged: function(selected) {
+
           if (!this.count || isNaN(selected)) {
             return;
           }
@@ -312,14 +332,19 @@
           // the numbers in dom and set up attribute bindings manually
           function create(type, classList) {
             var el = document.createElementNS(SVG_NS, type);
+            if (!("classList" in el)) {
+              var descr = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'classList');
+              Object.defineProperty(SVGElement.prototype, 'classList', descr);
+            }
             if (classList) {
               classList.forEach(function(c) {
-                el.classList.add(c);
+                Polymer.dom(el).classList.add(c);
               });
             }
             if (!Polymer.Settings.useNativeShadow) {
-              el.classList.add('style-scope');
-              el.classList.add('paper-clock-selector');
+
+              Polymer.dom(el).classList.add('style-scope');
+              Polymer.dom(el).classList.add('paper-clock-selector');
             }
             return el;
           }
@@ -352,9 +377,12 @@
           this._resizedCache = this._radius;
           this.$.clock.style.width = (radius * 2) + 'px';
           this.$.clock.style.height = (radius * 2) + 'px';
+          this.set("width", (radius * 2));
+          this.set("height", (radius * 2));
           var v = radius + 'px ' + radius + 'px';
           this._setTransformOrigin(this.$.clockHand, v);
           this._setTransformOrigin(this.$.clipCircle, v);
+          // this._setTransformOrigin(this.$.handNumber, v);
 
           this.async(function() {
             // FIXME: this is hacky, but for some reason we need to wait a bit
