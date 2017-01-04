@@ -105,7 +105,7 @@
         </g>
       </svg>
       <svg version="1.1" id="handNumber" height$="[[height]]" width$="[[width]]" style="position: absolute; top: 0; left: 0; z-index: 3;">
-          <text id="actualNumber" x="132" y="135" text-anchor="middle" fill="#ffffff">[[selected]]</text>
+          <text id="actualNumber" x$="[[numberOffsetX]]" y$="[[numberOffsetY]]" text-anchor="middle" fill="#ffffff">[[selected]]</text>
       </svg>
     </div>
   </template>
@@ -221,7 +221,7 @@
           Polymer.dom(this.$.clock).classList.add('animating');
           this.async(function() {
             this._setHandRotation(rotate);
-          });
+          }.bind(this));
 
         },
         _getTransform: function(el) {
@@ -234,6 +234,7 @@
           el.style.msTransformOrigin = el.style.webkitTransformOrigin = el.style.transformOrigin = value;
         },
         _setHandRotation: function(deg) {
+          this._updateSize();
           if (!("classList" in this.$.clockHand)) {
             var descr = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'classList');
             Object.defineProperty(SVGElement.prototype, 'classList', descr);
@@ -244,10 +245,10 @@
           Polymer.dom(this.$.clockHand).classList[['remove', 'add'][+hasLabel]]('no-dot');
           this._setTransform(this.$.clockHand, transform);
           this._setTransform(this.$.clipCircle, transform);
-          this.$.actualNumber.setAttribute("transform", "translate(" + Math.cos((deg-90)*Math.PI/180)*108 + "," + Math.sin((deg-90)*Math.PI/180)*108+")");
+          // console.log(this.numberOffsetX);
+          this.$.actualNumber.setAttribute("transform", "translate(" + Math.cos((deg-90)*Math.PI/180)*124 + "," + Math.sin((deg-90)*Math.PI/180)*124+")");
         },
         _selectedChanged: function(selected) {
-
           if (!this.count || isNaN(selected)) {
             return;
           }
@@ -368,6 +369,9 @@
           if (!radius || this._resizedCache === radius) {
             return;
           }
+          
+          this.set("numberOffsetX", (radius));
+          this.set("numberOffsetY", (radius*1.013));
           this._radius = radius;
           this._selectorSize = 20;
           this._selectorDotSize = 3;
