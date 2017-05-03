@@ -366,9 +366,12 @@
         },
         _updateSize: function() {
           var radius = Math.min(this.offsetWidth, this.offsetHeight) / 2;
-          if (!radius || this._resizedCache === radius) {
-            return;
-          }
+          //Since we use the paper-time-picker in a resizable window, we still want to perform
+          //the calculations below regardless of whether or not the radius of the circle has changed
+          //These calculations are important for the actual process of selection via a clock hand
+          // if (!radius || this._resizedCache === radius) {
+          //   return;
+          // }
           
           this.set("numberOffsetX", (radius));
           this.set("numberOffsetY", (radius*1.013));
